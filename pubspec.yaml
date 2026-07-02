@@ -1,0 +1,49 @@
+name: fools_rush
+description: "JOKER: Fools Rush - a vertical falling puzzle game."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+  shared_preferences: ^2.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/bubna_platform.webp
+    - assets/chester_dead.webp
+    - assets/chester_gothik.webp
+    - assets/chester_platform.webp
+    - assets/game_over_bg.webp
+    - assets/gold_coin.webp
+    - assets/hearts_platform.webp
+    - assets/icon.png
+    - assets/kresti_platform.webp
+    - assets/logo.webp
+    - assets/main_bg_horizontal.webp
+    - assets/main_bg_vertical.webp
+    - assets/pika_platform.webp
+    - assets/playing_bg.webp
+    - assets/small_devil_jester.webp
+    - assets/thorns.webp
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "assets/icon.png"
+  adaptive_icon_foreground: "assets/icon.png"
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icon.png"
