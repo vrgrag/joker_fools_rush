@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-import '../game/level_data.dart';
-import '../services/progress_service.dart';
-import '../theme/app_theme.dart';
+import 'board_levels.dart';
+import 'board_palette.dart';
+import 'board_vault.dart';
 
-class GameScreen extends StatefulWidget {
-  const GameScreen({super.key, required this.level});
+class BoardRun extends StatefulWidget {
+  const BoardRun({super.key, required this.level});
 
   final int level;
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  State<BoardRun> createState() => _BoardRunState();
 }
 
-enum _GameState { playing, paused, won, lost }
+enum _RunPhase { playing, paused, won, lost }
 
-class _GameScreenState extends State<GameScreen>
+class _BoardRunState extends State<BoardRun>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   late final LevelConfig _config;
@@ -36,7 +36,7 @@ class _GameScreenState extends State<GameScreen>
 
   double _time = 0;
 
-  _GameState _state = _GameState.playing;
+  _RunPhase _state = _RunPhase.playing;
 
   // Consumed items keyed by "row-idx:type:index-in-list"
   final Set<String> _consumed = <String>{};
@@ -59,7 +59,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _onTick(Duration elapsed) {
-    if (_state != _GameState.playing) {
+    if (_state != _RunPhase.playing) {
       _lastTick = elapsed;
       return;
     }
@@ -167,16 +167,16 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _win() {
-    if (_state != _GameState.playing) return;
-    _state = _GameState.won;
+    if (_state != _RunPhase.playing) return;
+    _state = _RunPhase.won;
     final int stars = _computeStars();
-    ProgressService.instance.completeLevel(widget.level, stars, _coins);
+    BoardVault.instance.completeStage(widget.level, stars, _coins);
     setState(() {});
   }
 
   void _lose() {
-    if (_state != _GameState.playing) return;
-    _state = _GameState.lost;
+    if (_state != _RunPhase.playing) return;
+    _state = _RunPhase.lost;
     setState(() {});
   }
 
@@ -198,21 +198,21 @@ class _GameScreenState extends State<GameScreen>
       _invulnUntil = 0;
       _time = 0;
       _consumed.clear();
-      _state = _GameState.playing;
+      _state = _RunPhase.playing;
       _lastTick = Duration.zero;
     });
   }
 
   void _pause() {
-    if (_state == _GameState.playing) {
-      setState(() => _state = _GameState.paused);
+    if (_state == _RunPhase.playing) {
+      setState(() => _state = _RunPhase.paused);
     }
   }
 
   void _resume() {
-    if (_state == _GameState.paused) {
+    if (_state == _RunPhase.paused) {
       _lastTick = Duration.zero;
-      setState(() => _state = _GameState.playing);
+      setState(() => _state = _RunPhase.playing);
     }
   }
 
@@ -225,7 +225,7 @@ class _GameScreenState extends State<GameScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: BoardPalette.background,
       body: LayoutBuilder(
         builder: (BuildContext ctx, BoxConstraints c) {
           return Stack(
@@ -250,9 +250,9 @@ class _GameScreenState extends State<GameScreen>
               // HUD.
               _buildHud(c),
               // Overlays.
-              if (_state == _GameState.paused) _buildPauseOverlay(),
-              if (_state == _GameState.won) _buildWinOverlay(),
-              if (_state == _GameState.lost) _buildLoseOverlay(),
+              if (_state == _RunPhase.paused) _buildPauseOverlay(),
+              if (_state == _RunPhase.won) _buildWinOverlay(),
+              if (_state == _RunPhase.lost) _buildLoseOverlay(),
             ],
           );
         },
@@ -365,7 +365,7 @@ class _GameScreenState extends State<GameScreen>
         child: Opacity(
           opacity: blink ? 0.35 : 1.0,
           child: Image.asset(
-            _state == _GameState.lost
+            _state == _RunPhase.lost
                 ? 'assets/chester_dead.webp'
                 : 'assets/chester_gothik.webp',
             fit: BoxFit.contain,
@@ -397,7 +397,7 @@ class _GameScreenState extends State<GameScreen>
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.accent, width: 2),
+                      border: Border.all(color: BoardPalette.accent, width: 2),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -424,13 +424,13 @@ class _GameScreenState extends State<GameScreen>
                 _StatChip(
                   icon: Icons.favorite,
                   label: '$_hearts',
-                  color: AppTheme.danger,
+                  color: BoardPalette.danger,
                 ),
                 const SizedBox(width: 6),
                 _StatChip(
                   icon: Icons.monetization_on,
                   label: '$_coins',
-                  color: AppTheme.accent,
+                  color: BoardPalette.accent,
                 ),
               ],
             ),
@@ -479,12 +479,12 @@ class _GameScreenState extends State<GameScreen>
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: BoardPalette.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.accent, width: 3),
+              border: Border.all(color: BoardPalette.accent, width: 3),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.6),
+                    color: BoardPalette.primary.withValues(alpha: 0.6),
                     blurRadius: 20),
               ],
             ),
@@ -495,7 +495,7 @@ class _GameScreenState extends State<GameScreen>
                   'LEVEL COMPLETE',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppTheme.accent,
+                    color: BoardPalette.accent,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 3,
@@ -511,7 +511,7 @@ class _GameScreenState extends State<GameScreen>
                         Icons.star,
                         size: 46,
                         color: i < stars
-                            ? AppTheme.accent
+                            ? BoardPalette.accent
                             : Colors.white24,
                       ),
                     );
@@ -527,13 +527,13 @@ class _GameScreenState extends State<GameScreen>
                 _PanelButton(
                   label: 'NEXT LEVEL',
                   primary: true,
-                  onTap: widget.level >= kTotalLevels
+                  onTap: widget.level >= kBoardLevelCount
                       ? () => Navigator.of(context).pop()
                       : () {
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute<void>(
                               builder: (_) =>
-                                  GameScreen(level: widget.level + 1),
+                                  BoardRun(level: widget.level + 1),
                             ),
                           );
                         },
@@ -562,12 +562,12 @@ class _GameScreenState extends State<GameScreen>
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.surface.withValues(alpha: 0.9),
+              color: BoardPalette.surface.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.danger, width: 3),
+              border: Border.all(color: BoardPalette.danger, width: 3),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                    color: AppTheme.danger.withValues(alpha: 0.6),
+                    color: BoardPalette.danger.withValues(alpha: 0.6),
                     blurRadius: 20),
               ],
             ),
@@ -578,7 +578,7 @@ class _GameScreenState extends State<GameScreen>
                   'GAME OVER',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppTheme.danger,
+                    color: BoardPalette.danger,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 3,
@@ -621,9 +621,9 @@ class _HudButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.accent, width: 2),
+            border: Border.all(color: BoardPalette.accent, width: 2),
           ),
-          child: Icon(icon, color: AppTheme.accent, size: 22),
+          child: Icon(icon, color: BoardPalette.accent, size: 22),
         ),
       ),
     );
@@ -681,9 +681,9 @@ class _CenterPanel extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 40),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: BoardPalette.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.accent, width: 3),
+              border: Border.all(color: BoardPalette.accent, width: 3),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -691,7 +691,7 @@ class _CenterPanel extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: AppTheme.accent,
+                    color: BoardPalette.accent,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 3,
@@ -735,13 +735,13 @@ class _PanelButton extends StatelessWidget {
                       : const <Color>[Color(0xFF3A1B4A), Color(0xFF1A0B24)],
                 ),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.accent, width: 2),
+                border: Border.all(color: BoardPalette.accent, width: 2),
               ),
               child: Center(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: primary ? Colors.white : AppTheme.accent,
+                    color: primary ? Colors.white : BoardPalette.accent,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,

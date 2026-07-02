@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../game/level_data.dart';
-import '../services/progress_service.dart';
-import '../theme/app_theme.dart';
-import 'game_screen.dart';
+import 'board_levels.dart';
+import 'board_palette.dart';
+import 'board_run.dart';
+import 'board_vault.dart';
 
-class LevelSelectScreen extends StatefulWidget {
-  const LevelSelectScreen({super.key});
+class BoardLobby extends StatefulWidget {
+  const BoardLobby({super.key});
 
   @override
-  State<LevelSelectScreen> createState() => _LevelSelectScreenState();
+  State<BoardLobby> createState() => _BoardLobbyState();
 }
 
-class _LevelSelectScreenState extends State<LevelSelectScreen> {
+class _BoardLobbyState extends State<BoardLobby> {
   @override
   Widget build(BuildContext context) {
-    final int unlocked = ProgressService.instance.unlockedLevels;
+    final int unlocked = BoardVault.instance.unlockedLevels;
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -31,7 +31,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                     children: <Widget>[
                       IconButton(
                         icon: const Icon(Icons.arrow_back,
-                            color: AppTheme.accent, size: 30),
+                            color: BoardPalette.accent, size: 30),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const Expanded(
@@ -39,7 +39,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                           'SELECT LEVEL',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppTheme.accent,
+                            color: BoardPalette.accent,
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 3,
@@ -57,7 +57,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: GridView.builder(
-                      itemCount: kTotalLevels,
+                      itemCount: kBoardLevelCount,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 4,
@@ -69,7 +69,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                         final int level = index + 1;
                         final bool locked = level > unlocked;
                         final int stars =
-                            ProgressService.instance.starsFor(level);
+                            BoardVault.instance.starsFor(level);
                         return _LevelTile(
                           level: level,
                           locked: locked,
@@ -79,8 +79,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                               : () async {
                                   await Navigator.of(context).push(
                                     MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          GameScreen(level: level),
+                                      builder: (_) => BoardRun(level: level),
                                     ),
                                   );
                                   if (mounted) setState(() {});
@@ -130,14 +129,14 @@ class _LevelTile extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: locked ? Colors.white24 : AppTheme.accent,
+              color: locked ? Colors.white24 : BoardPalette.accent,
               width: 2,
             ),
             boxShadow: locked
                 ? null
                 : <BoxShadow>[
                     BoxShadow(
-                      color: AppTheme.primary.withValues(alpha: 0.4),
+                      color: BoardPalette.primary.withValues(alpha: 0.4),
                       blurRadius: 10,
                     ),
                   ],
@@ -170,9 +169,8 @@ class _LevelTile extends StatelessWidget {
                       return Icon(
                         Icons.star,
                         size: 12,
-                        color: i < stars
-                            ? AppTheme.accent
-                            : Colors.white24,
+                        color:
+                            i < stars ? BoardPalette.accent : Colors.white24,
                       );
                     }),
                   ),

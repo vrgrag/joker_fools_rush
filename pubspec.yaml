@@ -1,7 +1,7 @@
 name: fools_rush
-description: "JOKER: Fools Rush - a vertical falling puzzle game."
+description: "Fool's Rush - a Joker themed portrait puzzle"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.10.8
@@ -9,14 +9,40 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  cupertino_icons: ^1.0.6
+  appsflyer_sdk: ^6.15.2
+  firebase_core: ^3.12.1
+  firebase_messaging: ^15.2.5
+  firebase_app_check: ^0.3.2+8
+  shared_preferences: ^2.5.2
+  connectivity_plus: ^6.1.3
+  http: ^1.2.2
+  package_info_plus: ^8.2.1
+  flutter_local_notifications: ^18.0.1
+  url_launcher: ^6.3.0
+  device_info_plus: ^11.3.0
+  path_provider: ^2.1.4
+  flutter_secure_storage: ^9.2.4
   webview_flutter: ^4.10.0
-  shared_preferences: ^2.3.3
+  webview_flutter_android: ^4.3.1
+  file_picker: 8.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon2.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "assets/icon2.png"
+  adaptive_icon_foreground: "assets/icon2.png"
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icon2.png"
 
 flutter:
   uses-material-design: true
@@ -28,22 +54,14 @@ flutter:
     - assets/game_over_bg.webp
     - assets/gold_coin.webp
     - assets/hearts_platform.webp
-    - assets/icon.png
     - assets/kresti_platform.webp
-    - assets/logo.webp
     - assets/main_bg_horizontal.webp
     - assets/main_bg_vertical.webp
     - assets/pika_platform.webp
     - assets/playing_bg.webp
     - assets/small_devil_jester.webp
     - assets/thorns.webp
-
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: "assets/icon.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "assets/icon.png"
-  adaptive_icon_foreground: "assets/icon.png"
-  adaptive_icon_foreground_inset: 0
-  adaptive_icon_monochrome: "assets/icon.png"
+    - assets/no_internet_vertical.webp
+    - assets/no_internet_horizontal.webp
+    - assets/notification_vertical.webp
+    - assets/notification_horizontal.webp

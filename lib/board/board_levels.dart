@@ -1,7 +1,7 @@
 import 'dart:math';
 
 /// Total number of levels in the game.
-const int kTotalLevels = 40;
+const int kBoardLevelCount = 40;
 
 enum PlatformSuit { hearts, diamonds, clubs, spades, joker }
 
@@ -72,9 +72,9 @@ class LevelConfig {
   final List<LevelRow> rows;
 
   static LevelConfig forLevel(int level) {
-    final int clamped = level.clamp(1, kTotalLevels);
+    final int clamped = level.clamp(1, kBoardLevelCount);
     // Difficulty ramps up smoothly across 40 levels.
-    final double t = (clamped - 1) / (kTotalLevels - 1); // 0..1
+    final double t = (clamped - 1) / (kBoardLevelCount - 1); // 0..1
 
     // Fall speed grows from slow stroll to fast plunge.
     final double fallSpeed = 0.35 + 0.55 * t;

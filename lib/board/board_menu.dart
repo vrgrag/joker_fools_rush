@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-import 'level_select_screen.dart';
-import 'webview_screen.dart';
+import '../env/legal_endpoints.dart';
+import 'board_lobby.dart';
+import 'board_palette.dart';
+import 'board_web_leaf.dart';
 
-class MenuScreen extends StatelessWidget {
-  const MenuScreen({super.key});
+class BoardMenu extends StatelessWidget {
+  const BoardMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,7 @@ class MenuScreen extends StatelessWidget {
                   primary: true,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const LevelSelectScreen(),
+                      builder: (_) => const BoardLobby(),
                     ),
                   ),
                 ),
@@ -33,9 +34,9 @@ class MenuScreen extends StatelessWidget {
                   label: 'PRIVACY POLICY',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const WebViewScreen(
+                      builder: (_) => const BoardWebLeaf(
                         title: 'Privacy Policy',
-                        url: 'https://foolsrussh.com/privacy-policy.html',
+                        url: privacyPolicyPageUrl,
                       ),
                     ),
                   ),
@@ -45,9 +46,9 @@ class MenuScreen extends StatelessWidget {
                   label: 'SUPPORT',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const WebViewScreen(
+                      builder: (_) => const BoardWebLeaf(
                         title: 'Support',
-                        url: 'https://foolsrussh.com/support.html',
+                        url: supportPageUrl,
                       ),
                     ),
                   ),
@@ -91,10 +92,10 @@ class _MenuButton extends StatelessWidget {
                     : const <Color>[Color(0xFF3A1B4A), Color(0xFF1A0B24)],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.accent, width: 2),
+              border: Border.all(color: BoardPalette.accent, width: 2),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.5),
+                  color: BoardPalette.primary.withValues(alpha: 0.5),
                   blurRadius: 14,
                   spreadRadius: 1,
                 ),
@@ -104,7 +105,7 @@ class _MenuButton extends StatelessWidget {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: primary ? Colors.white : AppTheme.accent,
+                  color: primary ? Colors.white : BoardPalette.accent,
                   fontSize: primary ? 28 : 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 3,
