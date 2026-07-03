@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -42,10 +43,15 @@ class WebPortal extends StatefulWidget {
 
 class _WebPortalState extends State<WebPortal>
     with WidgetsBindingObserver {
+  static const MethodChannel _nativeChannel =
+      MethodChannel('com.foolgold.foolsrush/webview_native');
+
   late final WebViewController _driver;
   bool _busy = true;
   StreamSubscription<List<ConnectivityResult>>? _connSub;
   Timer? _offlineDebounce;
+  Timer? _chromeSettingsTimer;
+  bool _chromeSettingsApplied = false;
   bool _showingOffline = false;
   String? _lastMainUrl;
   int _redirectRetries = 0;
@@ -79,6 +85,7 @@ class _WebPortalState extends State<WebPortal>
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: (_) {
           if (mounted) setState(() => _busy = true);
+          if (!_chromeSettingsApplied) _scheduleChromeLikeSettings();
         },
         onPageFinished: (_) {
           if (mounted) setState(() => _busy = false);
@@ -141,6 +148,7 @@ class _WebPortalState extends State<WebPortal>
 
     _wireAndroid();
     _driver.loadRequest(Uri.parse(widget.targetUrl));
+    _scheduleChromeLikeSettings();
 
     widget.courier.onWarmUrl = (String url) {
       if (mounted) _driver.loadRequest(Uri.parse(url));
@@ -185,6 +193,38 @@ class _WebPortalState extends State<WebPortal>
           ),
         ),
       ),
+    );
+  }
+
+  /// Repeatedly calls the native side to set `useWideViewPort=true` and
+  /// `loadWithOverviewMode=true` on the WebView platform view.
+  ///
+  /// The WebView is created asynchronously by the platform view, so we
+  /// poll every 200 ms until at least one WebView is configured, or we've
+  /// tried 25 times (~5 seconds).
+  void _scheduleChromeLikeSettings() {
+    if (!Platform.isAndroid) return;
+    int attempts = 0;
+    _chromeSettingsTimer?.cancel();
+    _chromeSettingsTimer = Timer.periodic(
+      const Duration(milliseconds: 200),
+      (Timer t) async {
+        attempts++;
+        if (!mounted || attempts > 25 || _chromeSettingsApplied) {
+          t.cancel();
+          return;
+        }
+        try {
+          final int? count = await _nativeChannel
+              .invokeMethod<int>('applyChromeLikeSettings');
+          if ((count ?? 0) > 0) {
+            _chromeSettingsApplied = true;
+            t.cancel();
+          }
+        } catch (e) {
+          if (kDebugMode) debugPrint('[WebPortal] native settings error: $e');
+        }
+      },
     );
   }
 
@@ -344,6 +384,7 @@ class _WebPortalState extends State<WebPortal>
     WidgetsBinding.instance.removeObserver(this);
     _connSub?.cancel();
     _offlineDebounce?.cancel();
+    _chromeSettingsTimer?.cancel();
     widget.courier.onWarmUrl = null;
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,

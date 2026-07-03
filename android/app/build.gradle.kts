@@ -5,7 +5,18 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
+}
+
+// Only apply Google Services plugin if google-services.json is provided.
+// This lets the app build without a Firebase config while still supporting
+// it in production if you drop the file into android/app/.
+val googleServicesJson = file("google-services.json")
+if (googleServicesJson.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.lifecycle(
+        "google-services.json not found — skipping com.google.gms.google-services plugin."
+    )
 }
 
 val keystoreProperties = Properties()

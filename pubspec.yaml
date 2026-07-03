@@ -1,7 +1,7 @@
 name: fools_rush
 description: "Fool's Rush - a Joker themed portrait puzzle"
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.1+6
 
 environment:
   sdk: ^3.10.8

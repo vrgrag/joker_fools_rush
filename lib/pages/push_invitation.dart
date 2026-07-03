@@ -242,6 +242,7 @@ class _SkipLinkState extends State<_SkipLink> {
 
   @override
   Widget build(BuildContext context) {
+    final bool compact = widget.compact;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _down = true),
@@ -250,24 +251,52 @@ class _SkipLinkState extends State<_SkipLink> {
         setState(() => _down = false);
         widget.onTap();
       },
-      child: AnimatedOpacity(
-        opacity: _down ? 0.5 : 0.85,
-        duration: const Duration(milliseconds: 80),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: widget.compact ? 2 : 8),
+      child: AnimatedScale(
+        scale: _down ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 90),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            vertical: compact ? 6 : 14,
+            horizontal: compact ? 10 : 22,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _down
+                  ? const <Color>[Color(0xFF1A0B24), Color(0xFF0A0410)]
+                  : const <Color>[Color(0xFF2A1240), Color(0xFF120820)],
+            ),
+            borderRadius:
+                const BorderRadius.all(Radius.elliptical(28, 22)),
+            border: Border.all(
+              color: const Color(0xFFFFC107),
+              width: 2.2,
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFFFFC107).withValues(alpha: 0.35),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+              const BoxShadow(
+                color: Colors.black54,
+                offset: Offset(0, 4),
+                blurRadius: 8,
+              ),
+            ],
+          ),
           child: Center(
             child: Text(
               'Skip',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: widget.compact ? 12 : 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: widget.compact ? 1.0 : 1.6,
+                color: const Color(0xFFFFC107),
+                fontSize: compact ? 13 : 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: compact ? 1.6 : 2.4,
                 shadows: const <Shadow>[
-                  Shadow(
-                      color: Colors.black54,
-                      blurRadius: 6,
-                      offset: Offset(0, 2)),
+                  Shadow(color: Colors.black, blurRadius: 6),
                 ],
               ),
             ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,7 +44,11 @@ class PortalStage extends StatefulWidget {
 
 class _PortalStageState extends State<PortalStage>
     with SingleTickerProviderStateMixin {
-  static const Duration _kMinDisplay = Duration(milliseconds: 3200);
+  // Bar fills to 85% during loading, holds there until the flow is ready
+  // to route, then bursts to 100% for a short final animation.
+  static const Duration _kInitialBarPhase = Duration(milliseconds: 3200);
+  static const Duration _kFinalBarPhase = Duration(milliseconds: 360);
+  static const double _kHoldAt = 0.85;
   // Hard cap must exceed the sum of (sensor.isReachable, attribution.boot,
   // waitAttribution+deepLink, gateway.ask). Previously 9s was too tight —
   // AppsFlyer's SDK typically needs 3-5s just for its own callback, and the
@@ -51,7 +56,8 @@ class _PortalStageState extends State<PortalStage>
   // still guaranteeing the loading screen never traps the user.
   static const Duration _kHardCap = Duration(seconds: 25);
 
-  late final AnimationController _barCtrl;
+  double _bar = 0.0;
+  Timer? _barTicker;
   Timer? _dotsTimer;
   Timer? _hardCap;
   int _dots = 0;
@@ -60,7 +66,7 @@ class _PortalStageState extends State<PortalStage>
   @override
   void initState() {
     super.initState();
-    _barCtrl = AnimationController(vsync: this, duration: _kMinDisplay);
+    _startInitialBar();
     _dotsTimer = Timer.periodic(const Duration(milliseconds: 420), (_) {
       if (mounted) setState(() => _dots = (_dots + 1) % 4);
     });
@@ -80,8 +86,41 @@ class _PortalStageState extends State<PortalStage>
     _driveFlow();
   }
 
+  void _startInitialBar() {
+    final DateTime start = DateTime.now();
+    _barTicker = Timer.periodic(const Duration(milliseconds: 40), (Timer t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      final double elapsed =
+          DateTime.now().difference(start).inMilliseconds.toDouble();
+      final double raw =
+          (elapsed / _kInitialBarPhase.inMilliseconds).clamp(0.0, 1.0);
+      // Ease-out for a natural feel.
+      final double eased = 1.0 - math.pow(1.0 - raw, 2.2).toDouble();
+      setState(() => _bar = eased * _kHoldAt);
+      if (raw >= 1.0) t.cancel();
+    });
+  }
+
+  Future<void> _burstBarToFull() async {
+    _barTicker?.cancel();
+    final DateTime start = DateTime.now();
+    final double from = _bar;
+    final int total = _kFinalBarPhase.inMilliseconds;
+    while (mounted) {
+      final int elapsed = DateTime.now().difference(start).inMilliseconds;
+      final double t = (elapsed / total).clamp(0.0, 1.0);
+      final double eased = 1.0 - math.pow(1.0 - t, 3).toDouble();
+      setState(() => _bar = from + (1.0 - from) * eased);
+      if (t >= 1.0) break;
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+    if (mounted) setState(() => _bar = 1.0);
+  }
+
   Future<void> _driveFlow() async {
-    _barCtrl.forward();
     try {
       widget.courier.onTokenRotated = _reprocessAfterTokenRotate;
       await widget.courier.boot();
@@ -114,9 +153,11 @@ class _PortalStageState extends State<PortalStage>
     final bool online = await widget.sensor.isReachable();
     _log('online=$online');
     if (!online) {
-      // Whitepart-first: no network on first launch → board game.
-      await LocalVault.instance.writeStage(LaunchStage.boardGame);
-      await _finishAnimationThenRoute(_toBoardGame);
+      // No network on very first launch: show the OfflineNotice screen.
+      // We deliberately DO NOT commit any launch stage, so once the user
+      // reconnects and taps Retry (or connectivity recovers), PortalStage
+      // will re-run this method with online=true and route by config.
+      await _finishAnimationThenRoute(() => _toOffline(null));
       return;
     }
 
@@ -204,12 +245,9 @@ class _PortalStageState extends State<PortalStage>
 
   Future<void> _finishAnimationThenRoute(Future<void> Function() go) async {
     if (!mounted) return;
-    if (_barCtrl.value < 1.0) {
-      await _barCtrl.forward(from: _barCtrl.value);
-    }
+    await _burstBarToFull();
     if (!mounted) return;
-    _barCtrl.value = 1.0;
-    await Future<void>.delayed(const Duration(milliseconds: 220));
+    await Future<void>.delayed(const Duration(milliseconds: 180));
     if (_routed || !mounted) return;
     _routed = true;
     _hardCap?.cancel();
@@ -317,7 +355,7 @@ class _PortalStageState extends State<PortalStage>
   void dispose() {
     _dotsTimer?.cancel();
     _hardCap?.cancel();
-    _barCtrl.dispose();
+    _barTicker?.cancel();
     super.dispose();
   }
 
@@ -370,45 +408,40 @@ class _PortalStageState extends State<PortalStage>
 
   Widget _barWidget(BuildContext context) {
     final double width = MediaQuery.of(context).size.width * 0.75;
-    return AnimatedBuilder(
-      animation: _barCtrl,
-      builder: (BuildContext _, Widget? child) {
-        return Container(
-          width: width,
-          height: 22,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFFC107), width: 2),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x80B388FF),
-                blurRadius: 12,
-                spreadRadius: 1,
-              ),
-            ],
+    return Container(
+      width: width,
+      height: 22,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFC107), width: 2),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x80B388FF),
+            blurRadius: 12,
+            spreadRadius: 1,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: _barCtrl.value.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: <Color>[
-                        Color(0xFFB388FF),
-                        Color(0xFFFFC107),
-                      ],
-                    ),
-                  ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: _bar.clamp(0.0, 1.0),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: <Color>[
+                    Color(0xFFB388FF),
+                    Color(0xFFFFC107),
+                  ],
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
