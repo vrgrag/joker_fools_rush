@@ -21,7 +21,7 @@ class FoolsRushApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Fool's Rush",
+      title: "Fools Rush",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       home: const LoadingScreen(),
