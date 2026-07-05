@@ -179,13 +179,18 @@ class _WebPortalState extends State<WebPortal>
   void _routeToOfflineNow() {
     if (_showingOffline || !mounted) return;
     _showingOffline = true;
+    // Return to the resource that was actually on-screen when the
+    // connection dropped (e.g. an external casino site the user
+    // navigated to), not the initial config URL. Falls back to the
+    // config URL if we never captured a main-frame navigation yet.
+    final String resumeUrl = _lastMainUrl ?? widget.targetUrl;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => OfflineNotice(
           onRetry: (BuildContext ctx) => Navigator.of(ctx).pushReplacement(
             MaterialPageRoute<void>(
               builder: (_) => WebPortal(
-                targetUrl: widget.targetUrl,
+                targetUrl: resumeUrl,
                 sensor: widget.sensor,
                 courier: widget.courier,
               ),
@@ -310,6 +315,18 @@ class _WebPortalState extends State<WebPortal>
   }
 
   void _injectSafeAreaScrub() {
+    // NOTE: we deliberately DO NOT clear padding/margin on
+    // html/body/#app/#root/#__next/#__nuxt/#__layout — the site relies
+    // on its own layout padding (side columns etc.) and blanking those
+    // collapses columns to the screen edge and eats inner gutters.
+    //
+    // What we scrub instead:
+    //   1) CSS variables that mirror env(safe-area-inset-*) — this
+    //      removes the "white band" from a notch without touching layout.
+    //   2) padding-top ONLY for known service wrapper bars
+    //      (.app-header, .gameview-mobile-header) which pad themselves
+    //      by safe-area-inset-top and leave a gap on our WebView where
+    //      the OS status bar is already covered by the Flutter Padding.
     _driver.runJavaScript(r'''
 (function(){
   if (window.__fySaArm) return;
@@ -327,9 +344,8 @@ class _WebPortalState extends State<WebPortal>
     '--safe-top:0px!important;--safe-right:0px!important;'+
     '--safe-bottom:0px!important;--safe-left:0px!important;'+
     '}'+
-    'html,body,#app,#root,#__next,#__nuxt,#__layout{'+
-    'padding-top:0!important;padding-left:0!important;'+
-    'padding-right:0!important;margin-top:0!important;}';
+    '.gameview-mobile-header,.app-header{'+
+    'padding-top:0!important;margin-top:0!important;}';
 
   function kbOpen(){
     if (!window.visualViewport) return false;
