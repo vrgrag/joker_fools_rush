@@ -50,11 +50,15 @@ class AgentClient extends http.BaseClient {
       final DeviceInfoPlugin info = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final AndroidDeviceInfo a = await info.androidInfo;
-        final int sdk = a.version.sdkInt;
+        // Use marketing release ("16"), not the SDK integer ("36").
+        // A Chrome-like UA always reports the Android release name.
+        final String androidRelease = a.version.release.isNotEmpty
+            ? a.version.release
+            : a.version.sdkInt.toString();
         final String brand = a.brand;
         final String model = a.model;
         final String build = a.display.isNotEmpty ? a.display : a.id;
-        _deviceAgent = 'Mozilla/5.0 (Linux; Android $sdk; $brand $model '
+        _deviceAgent = 'Mozilla/5.0 (Linux; Android $androidRelease; $brand $model '
             'Build/$build) AppleWebKit/$webkitVer (KHTML, like Gecko) '
             'Chrome/$chromeVer Mobile Safari/$webkitVer';
       } else {
