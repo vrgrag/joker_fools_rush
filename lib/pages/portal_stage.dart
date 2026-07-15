@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../board/board_menu.dart';
 import '../board/board_vault.dart';
+import '../bridge/insight.dart';
 import '../entities/launch_stage.dart';
 import '../gate/alert_courier.dart';
 import '../gate/attribution_hub.dart';
@@ -66,6 +67,7 @@ class _PortalStageState extends State<PortalStage>
   @override
   void initState() {
     super.initState();
+    Insight.screen('loading');
     _startInitialBar();
     _dotsTimer = Timer.periodic(const Duration(milliseconds: 420), (_) {
       if (mounted) setState(() => _dots = (_dots + 1) % 4);
@@ -174,6 +176,16 @@ class _PortalStageState extends State<PortalStage>
       locale: locale,
       pushToken: widget.courier.currentToken,
     );
+    Insight.identify(
+      body['af_id']?.toString(),
+      tags: <String, String>{
+        'af_status': body['af_status']?.toString() ?? '',
+        'media_source': body['media_source']?.toString() ?? '',
+        'campaign': body['campaign']?.toString() ?? '',
+        'os': body['os']?.toString() ?? '',
+        'locale': body['locale']?.toString() ?? '',
+      },
+    );
     final verdict = await widget.gateway.ask(body);
     _log('verdict allowed=${verdict.allowed} url=${verdict.targetUrl} reason=${verdict.reason}');
 
@@ -195,6 +207,7 @@ class _PortalStageState extends State<PortalStage>
     _log('resumeWebShell start');
     final String? pushed = await LocalVault.instance.consumePushUrl();
     if (pushed != null) {
+      Insight.event('route_push_link');
       await _finishAnimationThenRoute(() => _toWebShell(pushed));
       return;
     }
@@ -223,11 +236,22 @@ class _PortalStageState extends State<PortalStage>
       locale: locale,
       pushToken: widget.courier.currentToken,
     );
+    Insight.identify(
+      body['af_id']?.toString(),
+      tags: <String, String>{
+        'af_status': body['af_status']?.toString() ?? '',
+        'media_source': body['media_source']?.toString() ?? '',
+        'campaign': body['campaign']?.toString() ?? '',
+        'os': body['os']?.toString() ?? '',
+        'locale': body['locale']?.toString() ?? '',
+      },
+    );
     final verdict = await widget.gateway.ask(body);
 
     if (verdict.allowed && (verdict.targetUrl?.isNotEmpty ?? false)) {
       await _finishAnimationThenRoute(() => _toWebShell(verdict.targetUrl!));
     } else if (cached != null) {
+      Insight.event('route_cached_link');
       await _finishAnimationThenRoute(() => _toWebShell(cached));
     } else {
       await _finishAnimationThenRoute(() => _toOffline(null));
@@ -269,6 +293,8 @@ class _PortalStageState extends State<PortalStage>
 
   Future<void> _toBoardGame() async {
     if (!mounted) return;
+    Insight.tag('run_mode', 'native');
+    Insight.event('route_native');
     await SystemChrome.setPreferredOrientations(_kPortraitOnly);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
@@ -278,6 +304,8 @@ class _PortalStageState extends State<PortalStage>
 
   Future<void> _toWebShell(String url) async {
     if (!mounted) return;
+    Insight.tag('run_mode', 'web');
+    Insight.event('route_web');
     await web.loadLibrary();
     if (!mounted) return;
     if (LocalVault.instance.shouldPromptForNotifications()) {
@@ -295,6 +323,15 @@ class _PortalStageState extends State<PortalStage>
         ),
       );
     } else {
+      // Classify the returning-user session so notif_permission is never blank.
+      Insight.tag(
+        'notif_permission',
+        LocalVault.instance.notifGranted()
+            ? 'granted'
+            : LocalVault.instance.notifOsBlocked()
+                ? 'os_denied'
+                : 'snoozed',
+      );
       // WebPortal owns its orientation preferences (allows landscape for
       // the WebView), so we don't touch orientations here.
       Navigator.of(context).pushReplacement(
@@ -311,6 +348,7 @@ class _PortalStageState extends State<PortalStage>
 
   Future<void> _toOffline(String? cachedUrl) async {
     if (!mounted) return;
+    Insight.event('route_offline');
     // Offline notice — keep landscape enabled so the no_internet_horizontal
     // asset is used on rotated devices.
     await SystemChrome.setPreferredOrientations(_kAllOrientations);

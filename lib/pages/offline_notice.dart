@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../bridge/insight.dart';
+
 /// Full-screen offline notice.
 /// The visual layer is the custom `no_internet_*.webp` assets — a Retry
 /// button is overlaid at a fixed bottom fraction so both orientations
@@ -21,6 +23,7 @@ class _OfflineNoticeState extends State<OfflineNotice>
   @override
   void initState() {
     super.initState();
+    Insight.screen('offline');
     _press = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 110),
@@ -35,6 +38,7 @@ class _OfflineNoticeState extends State<OfflineNotice>
 
   Future<void> _retry() async {
     if (_reconnecting) return;
+    Insight.event('offline_retry');
     await _press.forward();
     await _press.reverse();
     setState(() => _reconnecting = true);

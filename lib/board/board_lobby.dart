@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../bridge/insight.dart';
 import 'board_levels.dart';
 import 'board_palette.dart';
 import 'board_run.dart';
@@ -13,6 +14,12 @@ class BoardLobby extends StatefulWidget {
 }
 
 class _BoardLobbyState extends State<BoardLobby> {
+  @override
+  void initState() {
+    super.initState();
+    Insight.screen('levels');
+  }
+
   @override
   Widget build(BuildContext context) {
     final int unlocked = BoardVault.instance.unlockedLevels;

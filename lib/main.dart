@@ -1,3 +1,4 @@
+import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'boot/root_app.dart';
+import 'bridge/insight.dart';
 import 'gate/alert_courier.dart';
 import 'gate/attribution_hub.dart';
 import 'net/agent_client.dart';
@@ -43,10 +45,13 @@ Future<void> main() async {
   final VerdictGateway gateway = VerdictGateway();
   final AlertCourier courier = AlertCourier();
 
-  runApp(RushRootApp(
-    sensor: sensor,
-    attribution: attribution,
-    gateway: gateway,
-    courier: courier,
+  runApp(ClarityWidget(
+    clarityConfig: Insight.config,
+    app: RushRootApp(
+      sensor: sensor,
+      attribution: attribution,
+      gateway: gateway,
+      courier: courier,
+    ),
   ));
 }

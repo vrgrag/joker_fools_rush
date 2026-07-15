@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../bridge/insight.dart';
 import '../env/identity.dart';
 import '../gate/alert_courier.dart';
 import '../net/net_sensor.dart';
@@ -36,6 +37,7 @@ class _PushInvitationPageState extends State<PushInvitationPage>
   @override
   void initState() {
     super.initState();
+    Insight.screen('push_invite');
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -51,11 +53,14 @@ class _PushInvitationPageState extends State<PushInvitationPage>
   Future<void> _accept() async {
     if (_busy) return;
     setState(() => _busy = true);
-    await widget.courier.askPermission();
+    Insight.event('push_invite_accept');
+    final bool granted = await widget.courier.askPermission();
+    Insight.tag('notif_permission', granted ? 'granted' : 'denied');
+    Insight.event(granted ? 'push_granted' : 'push_denied');
     if (!mounted) return;
     // Whatever the outcome — proceed to the WebPortal. If not granted,
     // schedule the next prompt window.
-    if (!LocalVault.instance.notifGranted()) {
+    if (!granted) {
       final int ts = DateTime.now().millisecondsSinceEpoch ~/ 1000 +
           Identity.notificationDeferSeconds;
       await LocalVault.instance.writeSkipUntil(ts);
@@ -66,6 +71,8 @@ class _PushInvitationPageState extends State<PushInvitationPage>
   Future<void> _skip() async {
     if (_busy) return;
     setState(() => _busy = true);
+    Insight.event('push_invite_skip');
+    Insight.tag('notif_permission', 'skipped');
     final int ts = DateTime.now().millisecondsSinceEpoch ~/ 1000 +
         Identity.notificationDeferSeconds;
     await LocalVault.instance.writeSkipUntil(ts);

@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../bridge/insight.dart';
 import '../env/legal_endpoints.dart';
 import 'board_lobby.dart';
 import 'board_palette.dart';
 import 'board_web_leaf.dart';
 
-class BoardMenu extends StatelessWidget {
+class BoardMenu extends StatefulWidget {
   const BoardMenu({super.key});
+
+  @override
+  State<BoardMenu> createState() => _BoardMenuState();
+}
+
+class _BoardMenuState extends State<BoardMenu> {
+  @override
+  void initState() {
+    super.initState();
+    Insight.screen('menu');
+  }
 
   @override
   Widget build(BuildContext context) {

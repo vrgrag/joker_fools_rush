@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../bridge/insight.dart';
 import 'board_levels.dart';
 import 'board_palette.dart';
 import 'board_vault.dart';
@@ -54,6 +55,8 @@ class _BoardRunState extends State<BoardRun>
   @override
   void initState() {
     super.initState();
+    Insight.screen('game');
+    Insight.tag('level', '${widget.level}');
     _config = LevelConfig.forLevel(widget.level);
     _ticker = createTicker(_onTick)..start();
   }
@@ -171,12 +174,17 @@ class _BoardRunState extends State<BoardRun>
     _state = _RunPhase.won;
     final int stars = _computeStars();
     BoardVault.instance.completeStage(widget.level, stars, _coins);
+    Insight.event('game_win');
+    Insight.tag('last_result', 'win');
+    Insight.tag('last_stars', '$stars');
     setState(() {});
   }
 
   void _lose() {
     if (_state != _RunPhase.playing) return;
     _state = _RunPhase.lost;
+    Insight.event('game_lose');
+    Insight.tag('last_result', 'lose');
     setState(() {});
   }
 
